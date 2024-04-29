@@ -1,10 +1,12 @@
 package com.ayan.game.pieces;
 
-public class Square extends GamePiece {
-    public Square(){
+public class SBlock extends GamePiece {
+
+    public SBlock() {
         boolean[][] shape = new boolean[][]{
+                {true, false},
                 {true, true},
-                {true, true}
+                {false, true}
         };
         super(shape);
     }

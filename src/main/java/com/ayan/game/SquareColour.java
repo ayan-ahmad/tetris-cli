@@ -12,11 +12,11 @@ public enum SquareColour {
     PURPLE("🟪", true),
     BROWN("🟫", true),
     BLACK("⬛", false),
-    WHITE("⬜", false);
+    WHITE("⬜", false),
+    EMPTY(" ", false);
 
     private String square;
     private boolean isBlock;
-
 
     SquareColour(String square, boolean isBlock){
         this.square = square;
@@ -32,7 +32,7 @@ public enum SquareColour {
     }
 
     public static List<SquareColour> getBlocks(){
-        return Arrays.stream(SquareColour.values()).filter(squareColour -> squareColour.isBlock).toList();
+        return Arrays.stream(SquareColour.values()).filter(SquareColour::isBlock).toList();
     }
 
     public static SquareColour getRandomBlock(){

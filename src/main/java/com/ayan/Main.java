@@ -1,9 +1,10 @@
 package com.ayan;
 
-// Press Shift twice to open the Search Everywhere dialog and type `show whitespaces`,
-// then press Enter. You can now see whitespace characters in your code.
+import com.ayan.game.logic.Board;
+
 public class Main {
     public static void main(String[] args) {
-        // Have 2D arrays: placed_piece
+        Board board = new Board();
+        board.render();
     }
 }
