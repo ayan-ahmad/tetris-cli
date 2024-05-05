@@ -11,7 +11,6 @@ public abstract class GamePiece implements IGamePiece {
 
     protected GamePiece(boolean[][] shape) {
         this.shape = shape;
-        System.out.println(Arrays.deepToString(shape));
         int height = 0;
         for(boolean[] column: this.shape){
             height = Math.max(height, column.length);
@@ -36,63 +35,12 @@ public abstract class GamePiece implements IGamePiece {
     }
 
     public void place(Board board) {
-        int[] offset = new int[shape.length];
-
-        for (int x = 0; x < shape.length; x++) {
-            offset[x] = 0;
-            for (int y = shape[x].length - 1; y >= 0; y--) {
-                if(shape[x][y]){
-                    continue;
-                }
-                offset[x] = offset[x]++;
-            }
+        for (int i = 0; i < board.getHeight() - this.getPosition().getY(); i++) {
+            this.down(board);
         }
-
-        int downCount = 0;
-
-        if(Arrays.stream(offset).sum() == 0){
-            int initialColumn = position.getX();
-            int endColumn = initialColumn + shape.length;
-
-            downCount = Integer.MAX_VALUE;
-            for (int x = initialColumn; x < endColumn; x++) {
-                int columnDownCount = 0;
-                for (int y = position.getY() - 1; y >= 0; y--) {
-                    if(board.getBoard()[x][y-offset[x-initialColumn]] != SquareColour.WHITE) {
-                        downCount = Math.min(columnDownCount, downCount);
-                        continue;
-                    }
-                    columnDownCount++;
-                }
-            }
-
-
-        } else {
-            int initialColumn = position.getX();
-            int endColumn = initialColumn + shape.length;
-
-            for (int x = initialColumn; x < endColumn; x++) {
-                int columnDownCount = 0;
-                for (int y = position.getY() - 1; y >= 0; y--) {
-                    if(board.getBoard()[x][y-offset[x-initialColumn]] != SquareColour.WHITE) {
-                        downCount = Math.max(columnDownCount, downCount);
-                        continue;
-                    }
-                    columnDownCount++;
-                }
-            }
-        }
-
-        if (downCount == 0 | downCount == Integer.MAX_VALUE) {
-            downCount = position.getY();
-        }
-
-        position.down(downCount);
-
-        board.merge(this);
     }
 
-    public void rotate() {
+    public void rotate(Board board) {
         int rows = shape.length;
         int cols = shape[0].length;
 
@@ -104,7 +52,53 @@ public abstract class GamePiece implements IGamePiece {
             }
         }
 
+        if(checkCollision(board, newShape)){
+            return;
+        }
+
         shape = newShape;
+    }
+
+    public boolean checkCollision(Board board, boolean[][] shape){
+        for (int y = board.getHeight() - 1; y >= 0; y--) {
+            for (int x = 0; x < board.getLength(); x++) {
+                if (x >= getPosition().getX() &&
+                        x < getPosition().getX() + shape.length &&
+                        y >= getPosition().getY() &&
+                        y < getPosition().getY() + shape[0].length) {
+                    int relativeX = x - getPosition().getX();
+                    int relativeY = y - getPosition().getY();
+                    if (shape[relativeX][relativeY] && board.getBoard()[x][y] != SquareColour.WHITE) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public synchronized void down(Board board){
+        getPosition().down();
+        if(getPosition().getY() == 0){
+            board.merge(this);
+        }else if(checkCollision(board, getShape())){
+            getPosition().up();
+            board.merge(this);
+        }
+    }
+
+    public synchronized void left(Board board){
+        getPosition().left();
+        if(checkCollision(board, getShape()) || getPosition().getX() < 0){
+            getPosition().right();
+        }
+    }
+
+    public synchronized void right(Board board){
+        getPosition().right();
+        if(checkCollision(board, getShape()) || getPosition().getX() > board.getLength() - shape.length){
+            getPosition().left();
+        }
     }
 }
 

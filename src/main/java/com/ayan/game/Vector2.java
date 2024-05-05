@@ -25,6 +25,11 @@ public class Vector2 {
     public void up(){
         this.y++;
     }
+
+    public void up(int i){
+        this.y+=i;
+    }
+
     public void left(){
         this.x--;
     }

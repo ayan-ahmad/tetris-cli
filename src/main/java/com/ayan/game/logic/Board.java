@@ -1,9 +1,11 @@
 package com.ayan.game.logic;
 
 import com.ayan.game.SquareColour;
+import com.ayan.game.Test;
 import com.ayan.game.pieces.*;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 
 public class Board {
     private final int length = 10;
@@ -22,23 +24,27 @@ public class Board {
                 board[i][j] = SquareColour.WHITE;
             }
         }
-//        board[0][0] = SquareColour.BLUE;
-//        board[1][0] = SquareColour.BLUE;
-//        board[0][1] = SquareColour.BLUE;
-//        board[1][1] = SquareColour.BLUE;
 
-//        board[2][1] = SquareColour.RED;
-//        board[2][2] = SquareColour.RED;
-//        board[1][2] = SquareColour.RED;
-//        currentPiece.getPosition().right();
-//        currentPiece.getPosition().right();
-//        currentPiece.getPosition().right();
-//        currentPiece.getPosition().right();
+        Thread gameTick = new Thread(new GameTick(this));
+        Thread gameController = new Thread(new GameController(this));
+        gameController.start();
+        gameTick.start();
+
+
 
 //        currentPiece.place(this);
 //
 //        new JBlock().place(this);
-//        new LBlock().place(this);
+
+
+//        new JBlock().place(this);
+//        GamePiece zblock = new ZBlock();
+//        zblock.rotate(this);
+//        zblock.right(this);
+//        currentPiece = zblock;
+//        render();
+
+
 //        new Line().place(this);
 //        new SBlock().place(this);
 //        new TBlock().place(this);
@@ -55,8 +61,9 @@ public class Board {
         reservedPiece = oldCurrentPiece;
     }
 
-    public void render(){
+    public synchronized void render(){
         // Loop through each row of the board
+        System.out.println();
         for (int y = height - 1; y >= 0; y--) {
             // Print each square in the row
             for (int x = 0; x < length; x++) {
@@ -80,7 +87,7 @@ public class Board {
         }
     }
 
-    public void merge(GamePiece piece) {
+    public synchronized void merge(GamePiece piece) {
         int pieceX = piece.getPosition().getX();
         int pieceY = piece.getPosition().getY();
         boolean[][] shape = piece.getShape();
@@ -95,9 +102,10 @@ public class Board {
                 }
             }
         }
+        setCurrentPiece();
     }
 
-    public GamePiece nextPiece(){
+    private GamePiece nextPiece(){
         int index = (int)(Math.random() * possiblePieces.length);
         try {
             return possiblePieces[index].getConstructor().newInstance();
@@ -107,7 +115,7 @@ public class Board {
         return null;
     }
 
-    public SquareColour[][] getBoard() {
+    public synchronized SquareColour[][] getBoard() {
         return board;
     }
 
@@ -117,5 +125,13 @@ public class Board {
 
     public int getHeight() {
         return height;
+    }
+
+    public synchronized GamePiece getCurrentPiece() {
+        return currentPiece;
+    }
+
+    public void setCurrentPiece() {
+        this.currentPiece = nextPiece();
     }
 }

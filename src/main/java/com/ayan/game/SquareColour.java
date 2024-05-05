@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public enum SquareColour {
+
+// None don't work on Windows automatically uncomment if emojis work for better experience
     RED("🟥", true),
     ORANGE("🟧", true),
     YELLOW("🟨", true),
@@ -14,6 +16,9 @@ public enum SquareColour {
     BLACK("⬛", false),
     WHITE("⬜", false),
     EMPTY(" ", false);
+
+//    FILLED("O", true),
+//    WHITE("X", false);
 
     private String square;
     private boolean isBlock;
