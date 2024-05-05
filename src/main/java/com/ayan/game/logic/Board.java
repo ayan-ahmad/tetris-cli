@@ -15,6 +15,8 @@ public class Board {
     private GamePiece currentPiece = this.nextPiece();
     private GamePiece reservedPiece = null;
 
+    private int score;
+
     private static final Class<? extends GamePiece>[] possiblePieces = new Class[] { Square.class, Line.class, JBlock.class, LBlock.class, SBlock.class, ZBlock.class, TBlock.class };
 
     public Board() {
@@ -87,7 +89,8 @@ public class Board {
         }
     }
 
-    public synchronized void merge(GamePiece piece) {
+    private synchronized void merge(GamePiece piece) {
+        System.out.println("merged");
         int pieceX = piece.getPosition().getX();
         int pieceY = piece.getPosition().getY();
         boolean[][] shape = piece.getShape();
@@ -102,7 +105,59 @@ public class Board {
                 }
             }
         }
+    }
+
+    private void collapseRow(int rowIndex) {
+        // Shift down all rows above rowIndex
+        for (int y = rowIndex+1; y < height; y++) {
+            for (int x = 0; x < length; x++) {
+                board[x][y-1] = board[x][y];
+            }
+        }
+        // Fill the top row with WHITE squares
+        for (int x = 0; x < length; x++) {
+            board[x][height-1] = SquareColour.WHITE;
+        }
+    }
+
+    // This checks the rows and adds scores for collapsed rows
+    private synchronized void collapseRows(){
+        int currentScore = 0;
+        int linesCleared = 0;
+        for (int i = height - 1; i >= 0; i--) {
+            boolean isRowFull = true;
+            for (int j = 0; j < length; j++) {
+                if (board[j][i] == SquareColour.WHITE) {
+                    isRowFull = false;
+                    break;
+                }
+            }
+            if (isRowFull) {
+                collapseRow(i);
+                linesCleared++;
+                currentScore += 100;
+            }
+        }
+        if (linesCleared > 1) {
+            currentScore += (linesCleared - 1) * 100;
+        }
+        score = currentScore;
+        System.out.println("Score: " + score);
+    }
+
+    private synchronized boolean isGameOver(GamePiece piece){
+        if(piece.getPosition().getY() + piece.getShape()[0].length > height-1){
+            System.out.println("Game Over");
+            return true;
+        }
+        return false;
+    }
+
+    public synchronized void addPiece(GamePiece piece){
+        merge(piece);
+        if(isGameOver(piece)) System.exit(1);
         setCurrentPiece();
+        collapseRows();
     }
 
     private GamePiece nextPiece(){

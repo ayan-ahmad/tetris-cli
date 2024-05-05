@@ -36,7 +36,7 @@ public abstract class GamePiece implements IGamePiece {
 
     public void place(Board board) {
         for (int i = 0; i < board.getHeight() - this.getPosition().getY(); i++) {
-            this.down(board);
+            if(this.down(board)) break;
         }
     }
 
@@ -77,14 +77,17 @@ public abstract class GamePiece implements IGamePiece {
         return false;
     }
 
-    public synchronized void down(Board board){
+    public synchronized boolean down(Board board){
         getPosition().down();
         if(getPosition().getY() == 0){
-            board.merge(this);
+            board.addPiece(this);
+            return true;
         }else if(checkCollision(board, getShape())){
             getPosition().up();
-            board.merge(this);
+            board.addPiece(this);
+            return true;
         }
+        return false;
     }
 
     public synchronized void left(Board board){
