@@ -1,15 +1,10 @@
 package com.ayan.game.logic;
 
 import com.ayan.game.SquareColour;
-import com.ayan.game.Test;
 import com.ayan.game.pieces.*;
-import com.ayan.store.DatabaseManager;
-import com.ayan.store.IConfigManager;
-import com.ayan.store.IDatabaseManager;
-import com.ayan.store.Score;
+import com.ayan.store.*;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -18,7 +13,7 @@ public class Board {
     private final int height;
 
     private final SquareColour[][] board;
-    private GamePiece currentPiece = this.nextPiece();
+    GamePiece currentPiece = this.nextPiece();
     private GamePiece reservedPiece = null;
 
     private int score = 2000;
@@ -74,6 +69,37 @@ public class Board {
         }
     }
 
+    public Board(IConfigManager config, IDatabaseManager dbManager, boolean dontRunThreads) {
+        this.length = config.getBoardLength();
+        this.height = config.getBoardHeight();
+        this.board = new SquareColour[length][height];
+
+        this.dbManager = dbManager;
+
+        // Initialize the board with all squares set to SquareColour.EMPTY
+        for (int i = 0; i < this.length; i++) {
+            for (int j = 0; j < this.height; j++) {
+                board[i][j] = SquareColour.WHITE;
+            }
+        }
+
+        this.gameTick = new GameTick(this, config.getGameTick());
+        this.gameController = new GameController(this);
+
+
+        if (dontRunThreads) {
+            this.started = false;
+            this.gameTick.stopThread();
+            this.gameController.stopThread();
+        } else {
+            this.started = true;
+            while (started) {
+                Thread.onSpinWait();
+                // This holds the thread
+            }
+        }
+    }
+
     public void reserveCurrentPiece(GamePiece piece){
         GamePiece oldCurrentPiece = currentPiece;
         if(reservedPiece == null){
@@ -85,7 +111,7 @@ public class Board {
     }
 
     public synchronized void render(){
-        if(!started){
+        if(!started ){
             // prevents rendering after closed
             return;
         }
@@ -177,7 +203,7 @@ public class Board {
     }
 
     @lombok.SneakyThrows
-    private void gameOver(){
+    public void gameOver(){
         gameTick.stopThread();
         gameController.stopThread();
         Thread.sleep(1000);
@@ -189,7 +215,7 @@ public class Board {
         System.out.println("You got a score of: " + this.score);
         List<Score> scores = dbManager.getScores();
         scores = scores.stream().sorted().toList();
-        if(scores.get(Math.min(scores.size() - 1, 9)).getScore() < this.score){
+        if(scores.isEmpty() || scores.get(Math.min(scores.size() - 1, 9)).getScore() < this.score){
             Scanner scanner = new Scanner(System.in);
             System.out.println("What name do you want for the leaderboard?");
             String name = scanner.nextLine();

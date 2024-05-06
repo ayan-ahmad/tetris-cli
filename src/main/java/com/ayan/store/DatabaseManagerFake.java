@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DatabaseManagerFake implements IDatabaseManager {
-    private List<Score> scores = new ArrayList<>();
+    public ArrayList<Score> scores = new ArrayList<>();
 
     @Override
     public List<Score> getScores() {
