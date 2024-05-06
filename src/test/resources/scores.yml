@@ -1,0 +1,9 @@
+!com.ayan.store.Score
+name: Josh
+score: 200
+--- !com.ayan.store.Score
+name: James
+score: 500
+--- !com.ayan.store.Score
+name: Joe
+score: 1000

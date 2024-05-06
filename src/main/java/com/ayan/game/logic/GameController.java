@@ -8,9 +8,13 @@ import java.io.IOException;
 
 public class GameController implements Runnable {
     Board board;
+    private boolean started;
 
     public GameController(Board board){
         this.board = board;
+        Thread thread = new Thread(this);
+        started = true;
+        thread.start();
     }
 
     @Override
@@ -19,7 +23,7 @@ public class GameController implements Runnable {
             Terminal terminal = TerminalBuilder.terminal();
             terminal.enterRawMode();
             NonBlockingReader reader = terminal.reader();
-            while (true) {
+            while (started) {
                 char input = (char) reader.read();
                 switch (input){
                     case 'a':
@@ -48,5 +52,9 @@ public class GameController implements Runnable {
             System.out.println("[ERROR] Unexpected I/O error, exiting");
             System.exit(1);
         }
+    }
+
+    public void stopThread(){
+        started = false;
     }
 }

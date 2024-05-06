@@ -3,36 +3,52 @@ package com.ayan.game.logic;
 import com.ayan.game.SquareColour;
 import com.ayan.game.Test;
 import com.ayan.game.pieces.*;
+import com.ayan.store.DatabaseManager;
+import com.ayan.store.IConfigManager;
+import com.ayan.store.IDatabaseManager;
+import com.ayan.store.Score;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Scanner;
 
 public class Board {
-    private final int length = 10;
-    private final int height = 20;
+    private final int length;
+    private final int height;
 
-    private SquareColour[][] board = new SquareColour[length][height];
+    private final SquareColour[][] board;
     private GamePiece currentPiece = this.nextPiece();
     private GamePiece reservedPiece = null;
 
-    private int score;
+    private int score = 2000;
+
+    GameTick gameTick;
+    GameController gameController;
+
+    private volatile boolean started;
+
+    private IDatabaseManager dbManager;
 
     private static final Class<? extends GamePiece>[] possiblePieces = new Class[] { Square.class, Line.class, JBlock.class, LBlock.class, SBlock.class, ZBlock.class, TBlock.class };
 
-    public Board() {
+    public Board(IConfigManager config, IDatabaseManager dbManager) {
+        this.length = config.getBoardLength();
+        this.height = config.getBoardHeight();
+        this.board = new SquareColour[length][height];
+
+        this.dbManager = dbManager;
+
         // Initialize the board with all squares set to SquareColour.EMPTY
-        for (int i = 0; i < length; i++) {
-            for (int j = 0; j < height; j++) {
+        for (int i = 0; i < this.length; i++) {
+            for (int j = 0; j < this.height; j++) {
                 board[i][j] = SquareColour.WHITE;
             }
         }
 
-        Thread gameTick = new Thread(new GameTick(this));
-        Thread gameController = new Thread(new GameController(this));
-        gameController.start();
-        gameTick.start();
-
-
+        this.gameTick = new GameTick(this, config.getGameTick());
+        this.gameController = new GameController(this);
+        this.started = true;
 
 //        currentPiece.place(this);
 //
@@ -51,6 +67,11 @@ public class Board {
 //        new SBlock().place(this);
 //        new TBlock().place(this);
 //        new ZBlock().place(this);
+
+        while (started) {
+            Thread.onSpinWait();
+            // This holds the thread
+        }
     }
 
     public void reserveCurrentPiece(GamePiece piece){
@@ -64,6 +85,10 @@ public class Board {
     }
 
     public synchronized void render(){
+        if(!started){
+            // prevents rendering after closed
+            return;
+        }
         // Loop through each row of the board
         System.out.println();
         for (int y = height - 1; y >= 0; y--) {
@@ -90,7 +115,6 @@ public class Board {
     }
 
     private synchronized void merge(GamePiece piece) {
-        System.out.println("merged");
         int pieceX = piece.getPosition().getX();
         int pieceY = piece.getPosition().getY();
         boolean[][] shape = piece.getShape();
@@ -141,8 +165,7 @@ public class Board {
         if (linesCleared > 1) {
             currentScore += (linesCleared - 1) * 100;
         }
-        score = currentScore;
-        System.out.println("Score: " + score);
+        this.score += currentScore;
     }
 
     private synchronized boolean isGameOver(GamePiece piece){
@@ -153,9 +176,38 @@ public class Board {
         return false;
     }
 
+    @lombok.SneakyThrows
+    private void gameOver(){
+        gameTick.stopThread();
+        gameController.stopThread();
+        Thread.sleep(1000);
+        if(dbManager.isHighScore(this.score)){
+            System.out.println("=====================");
+            System.out.println("    NEW HIGH SCORE   ");
+            System.out.println("=====================");
+        }
+        System.out.println("You got a score of: " + this.score);
+        List<Score> scores = dbManager.getScores();
+        scores = scores.stream().sorted().toList();
+        if(scores.get(Math.min(scores.size() - 1, 9)).getScore() < this.score){
+            Scanner scanner = new Scanner(System.in);
+            System.out.println("What name do you want for the leaderboard?");
+            String name = scanner.nextLine();
+            dbManager.addScore(name, this.score);
+        }
+        this.started = false;
+    }
+
     public synchronized void addPiece(GamePiece piece){
+        if(!started){
+            // Sometimes this gets called twice
+            return;
+        }
         merge(piece);
-        if(isGameOver(piece)) System.exit(1);
+        if(isGameOver(piece)) {
+            gameOver();
+            return;
+        }
         setCurrentPiece();
         collapseRows();
     }
